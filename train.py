@@ -24,13 +24,23 @@ def forward_diffusion_sample(x_0, time_step, device="cpu"):
     ), noise.to(device)
 
 def get_loss(model, x_0, t, device):
-    x_noisy, noise = forward_diffusion_sample(x_0, t, device)
-    noise_pred = model(x_noisy, t)
-    return F.mse_loss(noise, noise_pred)
+    # 加噪样本和真实噪声
+    x_noisy, noise = forward_diffusion_sample(x_0, t, device)  
+    noise_pred = model(x_noisy, t)  # 预测噪声
+    # 计算基础MSE损失
+    base_loss = F.mse_loss(noise_pred, noise, reduction="none")
+    base_loss = base_loss.mean(dim=list(range(1, len(base_loss.shape))))  # 按样本维度平均
+    # 计算SNR(t)
+    alpha_cumprod_t = get_index_from_list(alpha_cumprod, t, x_0.shape)  # 获取当前t的ᾱ_t
+    snr_t = alpha_cumprod_t / (1 - alpha_cumprod_t)  # SNR(t) = ᾱ_t / (1 - ᾱ_t)
+    # Min-SNR-5加权：γ=5，抑制简单任务权重
+    snr_weight = torch.clamp(snr_t, max=5.0)  # w_t = min(SNR(t), 5)
+    weighted_loss = base_loss * snr_weight
+    return weighted_loss.mean()  # 返回加权平均损失
 
 def main():
     model = Unet()
-    T = 300
+    T = 1000
     BATCH_SIZE = 128
     epochs = 100
     
@@ -42,7 +52,7 @@ def main():
     logging.info(f"Using device: {device}")
     
     model.to(device)
-    optimizer = Adam(model.parameters(), lr=0.001)
+    optimizer = Adam(model.parameters(), lr=1e-5)
     
     for epoch in tqdm(range(epochs), desc="Total Progress", position=0):  
         epoch_loss = 0.0
@@ -60,6 +70,7 @@ def main():
             t = torch.randint(0, T, (BATCH_SIZE,), device=device).long()
             loss = get_loss(model, batch, t, device=device)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             
             epoch_loss += loss.item()

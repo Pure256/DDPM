@@ -41,7 +41,7 @@ class ImageDataset(Dataset):
             return torch.zeros(3, self.img_size, self.img_size)  # 返回占位符
 
 def load_transformed_dataset(
-    root_dir: str = "./pokemon",
+    root_dir: str = "./data",
     img_size: int = 128,
     batch_size: int = 32,
     validation_split: float = 0.0
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # 加载数据集（根据是否划分验证集处理返回值）
     validation_split = 0.2
     loader = load_transformed_dataset(
-        root_dir="./pokemon",
+        root_dir="./data",
         img_size=128,
         batch_size=32,
         validation_split=validation_split

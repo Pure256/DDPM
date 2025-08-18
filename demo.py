@@ -53,12 +53,12 @@ def sample_plot_image(model, device, img_size, T):
 
 if __name__ == "__main__":
     img_size = 128
-    T = 300
+    T = 1000
     model = Unet()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
     
-    checkpoint_path = "ddpm_checkpoint_epoch_10.pth"
+    checkpoint_path = "ddpm_checkpoint_epoch_100.pth"
     
     # 验证文件是否存在[3](@ref)
     if not os.path.exists(checkpoint_path):

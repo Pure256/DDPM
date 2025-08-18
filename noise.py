@@ -14,7 +14,7 @@ def get_index_from_list(vals, time_step, x_shape):
 
 
 # 扩散过程的总时间步数
-T = 300
+T = 1000
 # 生成噪声调度参数 beta，从 0.0001 线性增加到 0.01
 beta = torch.linspace(0.0001, 0.01, T)
 # 计算 alpha，表示每一步保留的信号比例
